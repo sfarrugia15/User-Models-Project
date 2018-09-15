@@ -1,0 +1,26 @@
+steps
+1)5 movies to go through with 5 words missing in each
+	loop
+		Show movie title
+		loop
+			Show possible words
+			get verbal confirmation
+			perform pupil test
+		end
+		show complete text
+	end 
+
+
+
+Considerations:
+size of shapes
+patterns(grey?)
+borrow code to callibrate eyetracker with opensesame
+initial experiment to set threshold range of pupil size of users
+how to communicate between scripts, eyetracker and opensesame(stop condition)
+
+
+
+todo
+find 5 movies
+
