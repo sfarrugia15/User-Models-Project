@@ -1,7 +1,7 @@
 ---
 API: 2.1
-OpenSesame: 3.2.5b1
-Platform: posix
+OpenSesame: 3.2.5
+Platform: nt
 ---
 set width 1280
 set uniform_coordinates yes
@@ -28,7 +28,7 @@ set font_size 18
 set font_italic no
 set font_family mono
 set font_bold no
-set experiment_path "/home/ian/Desktop/userModels/User-Models-Project"
+set experiment_path "C:/Users/Steve/Documents/GitHub/User-Models-Project"
 set disable_garbage_collection yes
 set description "A brain-computer interface based on covert attention and pupillometry"
 set coordinates relative
@@ -610,7 +610,7 @@ define inline_script itemArray
 		"""
 		index2Change1=0
 		index2Change2=0
-		itemChange=[]
+		var.itemChange=[]
 		def __init__(self, itemIds, stabilize=False, check=True, ecc=310, size=64,
 			debug=True, bgScale=2, writingIndicator=None):
 			
@@ -717,7 +717,7 @@ define inline_script itemArray
 			
 			return np.mean([item.likelihood() for item in self.items])
 			
-		def invert(self, dur=500, index2Change1=0,index2Change2=2):
+		def invert(self, dur=500, index2Change1=0,index2Change2=1):
 			
 			"""
 			desc:
@@ -729,13 +729,18 @@ define inline_script itemArray
 			
 			f = np.linspace(1, -1, dur)
 			a = [index2Change1,index2Change2]
-			itemChange.append(self.items[index2Change1],self.items[index2Change2])
-			oldBrightness = np.array.append(itemChange[0].brightness, itemChange[1].brightness)
+			var.itemChange.append(self.items[index2Change1])
+			var.itemChange.append(self.items[index2Change2])
+			
+			print(var.itemChange[0].brightness)
+			print(var.itemChange[1].brightness)
+			
+			oldBrightness = np.array((1),(-1))
 			t0 = exp.time()
 			i = 0
 			while i < dur:			
 				n = 0			
-				for item in itemChange:
+				for item in var.itemChange:
 					item.setBrightness(oldBrightness[n] * f[i])
 					n += 1
 				print 'i = %s' % i
@@ -743,7 +748,7 @@ define inline_script itemArray
 				t1 = exp.time()
 				i = int(t1-t0)
 			n = 0
-			for item in itemChange:
+			for item in var.itemChange:
 				item.setBrightness(oldBrightness[n] * f[-1])
 				n += 1
 				
