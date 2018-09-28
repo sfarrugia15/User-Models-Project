@@ -28,7 +28,7 @@ set font_size 18
 set font_italic no
 set font_family mono
 set font_bold no
-set experiment_path "C:/Users/Steve/Google Drive/Master_Rug/Year 2 - Semester 1a/User Models/Speller"
+set experiment_path "C:/Users/Steve/Documents/GitHub/User-Models-Project"
 set disable_garbage_collection yes
 set description "A brain-computer interface based on covert attention and pupillometry"
 set coordinates relative
