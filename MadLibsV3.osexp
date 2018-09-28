@@ -608,8 +608,7 @@ define inline_script itemArray
 		desc:
 			An array of selectable items.
 		"""
-		index2Change1=0
-		index2Change2=0
+	
 		var.itemChange=[]
 		def __init__(self, itemIds, stabilize=False, check=True, ecc=310, size=64,
 			debug=True, bgScale=2, writingIndicator=None):
@@ -717,40 +716,61 @@ define inline_script itemArray
 			
 			return np.mean([item.likelihood() for item in self.items])
 			
-		def invert(self, dur=500, index2Change1=0,index2Change2=1):
-			
-			"""
-			desc:
-				Inverts the brightness of all items.
+		def invert(self, dur=500):
 				
-			keywords:
-				steps:	The duration of the inversion animation.
-			"""
+				"""
+				desc:
+					Inverts the brightness of all items.
+					
+				keywords:
+					steps:	The duration of the inversion animation.
+				"""
+				
+				f = np.linspace(1, -1, dur)
+				leftSideItems = []
+				leftSideItems.append(self.items[2])
+				leftSideItems.append(self.items[3])
+				oldBrightnessLeft = np.array([item.brightness for item in leftSideItems])
+				
+				#rightSideItems = []
+				#rightSideItems.append(self.items[0])
+				#rightSideItems.append(self.items[1])
+				#oldBrightnessRight = np.array([item.brightness for item in rightSideItems])
+				
+				t0 = exp.time()
+				i = 0
 			
-			f = np.linspace(1, -1, dur)
-			a = [index2Change1,index2Change2]
-			var.itemChange.append(self.items[index2Change1])
-			var.itemChange.append(self.items[index2Change2])
-			
-			print(var.itemChange[0].brightness)
-			print(var.itemChange[1].brightness)
-			
-			oldBrightness = np.array((1),(-1))
-			t0 = exp.time()
-			i = 0
-			while i < dur:			
-				n = 0			
-				for item in var.itemChange:
-					item.setBrightness(oldBrightness[n] * f[i])
+				# First two items - Normal Change in colour
+				while i < dur:			
+					n = 0			
+					for item in leftSideItems:
+						item.setBrightness(oldBrightnessLeft[n] * f[i])
+						n += 1
+					print 'i = %s' % i
+					self.show()
+					t1 = exp.time()
+					i = int(t1-t0)
+				n = 0
+				
+				for item in leftSideItems:
+					item.setBrightness(oldBrightnessLeft[n] * f[-1])
 					n += 1
-				print 'i = %s' % i
-				self.show()
-				t1 = exp.time()
-				i = int(t1-t0)
-			n = 0
-			for item in var.itemChange:
-				item.setBrightness(oldBrightness[n] * f[-1])
-				n += 1
+				
+				# Third two items - W W W B
+				#while i < dur:			
+				#	n = 0			
+				#	for item in self.items:
+				#		item.setBrightness(oldBrightnessRight[n] * f[i])
+				#		n += 2
+				#	print 'i = %s' % i
+				#	self.show()
+				#	t1 = exp.time()
+				#	i = int(t1-t0)
+				#n = 0
+					
+				#for item in rightSideItems:
+				#	item.setBrightness(oldBrightnessRight[n] * f[-1])
+				#	n += 2
 				
 		def setMode2(self, mode2, steps=50):
 			
@@ -846,7 +866,7 @@ define inline_script itemArray
 			while True:				
 				eyetracker.log('start_round %d' % rounds)			
 				eyetracker.log('start_invert')
-				self.invert(dur=invertSteps)
+				self.invert(dur=invertSteps )
 				eyetracker.log('end_invert')
 				eyetracker.log('start_adaptation')
 				collectPupilTrace(self, adaptDur)
