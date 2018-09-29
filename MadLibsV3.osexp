@@ -372,6 +372,8 @@ define inline_script globals
 	var.topLeftPattern = [1,1,-1,-1]
 	var.bottomLeftPattern = [1,-1,1,-1]
 	var.bottomRightPattern = [-1,-1,1,1]
+	var.threshold = 1
+	
 	
 	var.predictionArray = [] 
 	
@@ -727,23 +729,24 @@ define inline_script itemArray
 			
 			return np.mean([item.likelihood() for item in self.items])
 		
+		# Return the similarity percentage for each cycle - pattern and reading. 
 		def comparePatterns(self, predictionArray):
 			sm = [] 
 			#test = [1, 0, -1, 1]
 			for i in range(0,4):
 				sm.append(np.mean( np.array(predictionArray) == np.array(var.compareArray[i])))
 			return sm
-			
-			#sm = difflib.SequenceMatcher(None,test, var.bottomLeftPattern)
-			#print(sm.ratio())	
 		
-		def getColor(index, meanPupilSize, whiteThreshold , blackThreshold):
-			if meanPupilSize < whiteThreshold: 
+		# Comparing the meanPupilSize with the black and white thresholds.
+		# If White set to 1, Black set to -1, else 0. 
+		def getColor(index, meanPupilSize):
+			if minWhiteThreshold < meanPupilSize && meanPupilSize < maxWhiteThreshold: 
 				var.predictionArray.append([1])
-			elif meanPupilSize > blackThreshold:
+			elif minBlackThreshold < meanPupilSize && meanPupilSize < maxBlackThreshold: 
 				var.predictionArray.append([-1])
 			else:
 				var.predictionArray.append([0])
+		
 		
 		def invert(self, dur=500):
 				#self.comparePatterns()	
@@ -794,14 +797,16 @@ define inline_script itemArray
 				
 					eyetracker.log('end_collection')
 					meanPupilSize = np.median(a)
-					#getColor(x, meanPupilSize, threshold*0.2, threshold*0.8)
+					print(meanPupilSize)
+					
+					#getColor(x, meanPupilSize)
 					
 					self.pupilSizeIndicator.setText(str(meanPupilSize))
 					for item in self.items:
 						item.setPupilSize(meanPupilSize)	
 					self.show()
-				threshol
-				self.comparePatterns(var.predictionArray)
+				
+				#self.comparePatterns(var.predictionArray)
 			
 		def setMode2(self, mode2, steps=50):
 			
