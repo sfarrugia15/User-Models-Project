@@ -752,6 +752,20 @@ define inline_script itemArray
 					i = int(t1-t0)
 				n = 0
 				
+				#eyetracker.log('start_round %d' % rounds)			
+				eyetracker.log('start_invert')
+				eyetracker.log('end_invert')
+				eyetracker.log('start_adaptation')
+				collectPupilTrace(self, dur)
+				eyetracker.log('end_adaptation')
+				eyetracker.log('start_collection')
+				a = collectPupilTrace(self, dur/2)
+				eyetracker.log('end_collection')
+				meanPupilSize = np.median(a)
+				self.pupilSizeIndicator.setText(str(meanPupilSize))
+				for item in self.items:
+					item.setPupilSize(meanPupilSize)	
+				
 				for item in leftSideItems:
 					item.setBrightness(oldBrightnessLeft[n] * f[-1])
 					n += 1
@@ -864,20 +878,7 @@ define inline_script itemArray
 			self.show()
 			collectPupilTrace(self, initialSleep)
 			while True:				
-				eyetracker.log('start_round %d' % rounds)			
-				eyetracker.log('start_invert')
-				self.invert(dur=invertSteps )
-				eyetracker.log('end_invert')
-				eyetracker.log('start_adaptation')
-				collectPupilTrace(self, adaptDur)
-				eyetracker.log('end_adaptation')
-				eyetracker.log('start_collection')
-				a = collectPupilTrace(self, collectDur)
-				eyetracker.log('end_collection')
-				meanPupilSize = np.median(a)
-				self.pupilSizeIndicator.setText(str(meanPupilSize))
-				for item in self.items:
-					item.setPupilSize(meanPupilSize)				
+				self.invert(dur=invertSteps )			
 				_items = []
 				prune = False
 				for item in self.items:
