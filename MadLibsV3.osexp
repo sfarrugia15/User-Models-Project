@@ -360,11 +360,22 @@ define inline_script globals
 	import os
 	from psychopy.visual import TextStim, GratingStim, ImageStim
 	import subprocess
+	import difflib
 	
 	my_keyboard = keyboard(timeout=0)
 	my_mouse = mouse()
 	xc = var.width/2
 	yc = var.height/2
+	
+	
+	var.topRightPattern = [-1,1,-1,1]
+	var.topLeftPattern = [1,1,-1,-1]
+	var.bottomLeftPattern = [1,-1,1,-1]
+	var.bottomRightPattern = [-1,-1,1,1]
+	
+	var.predictionArray = [] 
+	
+	var.compareArray = [var.bottomRightPattern, var.topRightPattern, var.topLeftPattern, var.bottomLeftPattern]
 	__end__
 	set _prepare ""
 
@@ -715,9 +726,27 @@ define inline_script itemArray
 			"""
 			
 			return np.mean([item.likelihood() for item in self.items])
+		
+		def comparePatterns(self, predictionArray):
+			sm = [] 
+			#test = [1, 0, -1, 1]
+			for i in range(0,4):
+				sm.append(np.mean( np.array(predictionArray) == np.array(var.compareArray[i])))
+			return sm
 			
+			#sm = difflib.SequenceMatcher(None,test, var.bottomLeftPattern)
+			#print(sm.ratio())	
+		
+		def getColor(index, meanPupilSize, whiteThreshold , blackThreshold):
+			if meanPupilSize < whiteThreshold: 
+				var.predictionArray.append([1])
+			elif meanPupilSize > blackThreshold:
+				var.predictionArray.append([-1])
+			else:
+				var.predictionArray.append([0])
+		
 		def invert(self, dur=500):
-				
+				#self.comparePatterns()	
 				"""
 				desc:
 					Inverts the brightness of all items.
@@ -727,69 +756,58 @@ define inline_script itemArray
 				"""
 				
 				f = np.linspace(1, -1, dur)
-				leftSideItems = []
-				leftSideItems.append(self.items[2])
-				leftSideItems.append(self.items[3])
-				oldBrightnessLeft = np.array([item.brightness for item in leftSideItems])
+				leftSideBottom = []
+				leftSideTop = []
+				leftSideTop.append(self.items[2])
+				leftSideBottom.append(self.items[3])
 				
-				#rightSideItems = []
-				#rightSideItems.append(self.items[0])
-				#rightSideItems.append(self.items[1])
-				#oldBrightnessRight = np.array([item.brightness for item in rightSideItems])
+				rightSideTop = []
+				rightSideBottom = []
+				rightSideTop.append(self.items[1])
+				rightSideBottom.append(self.items[0])
+	
+				pupilSizeTraces = []
+	
+				# Iterate through each color in the defined global variables 
+				for x in range(0,4):
+					t0 = exp.time()
+					print('t0 ',t0)
+					i = 0
+					#set the color equal to the corresponding color of x in the global variable
+					while i < dur:		
+						rightSideTop[0].setBrightness(var.topRightPattern[x] )
+						rightSideBottom[0].setBrightness(var.bottomRightPattern[x])
+						leftSideTop[0].setBrightness(var.topLeftPattern[x])
+						leftSideBottom[0].setBrightness(var.bottomLeftPattern[x])
+						#print 'i = %s' % i
+						t1 = exp.time()
+						i = int(t1-t0)
+					print('t1', t1)
+					#eyetracker.log('start_round %d' % rounds)			
+					eyetracker.log('start_invert')
+					eyetracker.log('end_invert')
+					eyetracker.log('start_adaptation')
+					collectPupilTrace(self, dur)
+					eyetracker.log('end_adaptation')
+					eyetracker.log('start_collection')
+					a = collectPupilTrace(self, dur/2)
 				
-				t0 = exp.time()
-				i = 0
-			
-				# First two items - Normal Change in colour
-				while i < dur:			
-					n = 0			
-					for item in leftSideItems:
-						item.setBrightness(oldBrightnessLeft[n] * f[i])
-						n += 1
-					print 'i = %s' % i
-					self.show()
-					t1 = exp.time()
-					i = int(t1-t0)
-				n = 0
-				
-				#eyetracker.log('start_round %d' % rounds)			
-				eyetracker.log('start_invert')
-				eyetracker.log('end_invert')
-				eyetracker.log('start_adaptation')
-				collectPupilTrace(self, dur)
-				eyetracker.log('end_adaptation')
-				eyetracker.log('start_collection')
-				a = collectPupilTrace(self, dur/2)
-				eyetracker.log('end_collection')
-				meanPupilSize = np.median(a)
-				self.pupilSizeIndicator.setText(str(meanPupilSize))
-				for item in self.items:
-					item.setPupilSize(meanPupilSize)	
-				
-				for item in leftSideItems:
-					item.setBrightness(oldBrightnessLeft[n] * f[-1])
-					n += 1
-				
-				# Third two items - W W W B
-				#while i < dur:			
-				#	n = 0			
-				#	for item in self.items:
-				#		item.setBrightness(oldBrightnessRight[n] * f[i])
-				#		n += 2
-				#	print 'i = %s' % i
-				#	self.show()
-				#	t1 = exp.time()
-				#	i = int(t1-t0)
-				#n = 0
+					eyetracker.log('end_collection')
+					meanPupilSize = np.median(a)
+					#getColor(x, meanPupilSize, threshold*0.2, threshold*0.8)
 					
-				#for item in rightSideItems:
-				#	item.setBrightness(oldBrightnessRight[n] * f[-1])
-				#	n += 2
-				
+					self.pupilSizeIndicator.setText(str(meanPupilSize))
+					for item in self.items:
+						item.setPupilSize(meanPupilSize)	
+					self.show()
+				threshol
+				self.comparePatterns(var.predictionArray)
+			
 		def setMode2(self, mode2, steps=50):
 			
 			"""
 			desc:
+	
 				See mode2 description in __init__().
 				
 			arguments:
