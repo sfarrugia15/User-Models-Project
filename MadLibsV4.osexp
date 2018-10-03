@@ -59,6 +59,23 @@ define sketchpad blank
 	set duration 0
 	set description "Displays stimuli"
 
+define loop calibration
+	set source table
+	set repeat 1
+	set order sequential
+	set description "Repeatedly runs another item"
+	set cycles 1
+	set continuous no
+	set break_if_on_first yes
+	set break_if never
+	setcycle 0 empty_column ""
+	run calibration_sequence
+
+define sequence calibration_sequence
+	set flush_keyboard yes
+	set description "Runs a number of items in sequence"
+	run new_inline_script always
+
 define inline_script default_settings
 	set description "Executes Python code"
 	set _run ""
@@ -78,19 +95,21 @@ define loop eight_options
 	set offset no
 	set item exp_sequence
 	set description "Repeatedly runs another item"
-	set cycles 4
+	set cycles 2
 	set continuous no
 	set column_order "target;itemIds"
 	set break_if_on_first yes
 	set break_if never
-	setcycle 0 target A
-	setcycle 0 itemIds 1234EFGH
-	setcycle 1 target S
-	setcycle 1 itemIds 1234EFGH
-	setcycle 2 target C
-	setcycle 2 itemIds 1234EFGH
-	setcycle 3 target D
-	setcycle 3 itemIds 1234EFGH
+	setcycle 0 colorDown black
+	setcycle 0 colorLeft black
+	setcycle 0 colorRight black
+	setcycle 0 colorUp black
+	setcycle 0 rowNumber 1
+	setcycle 1 colorDown white
+	setcycle 1 colorLeft white
+	setcycle 1 colorRight white
+	setcycle 1 colorUp white
+	setcycle 1 rowNumber 2
 	run exp_sequence
 
 define sequence exp_sequence
@@ -99,7 +118,6 @@ define sequence exp_sequence
 	run pygaze_drift_correct always
 	run pygaze_start_recording always
 	run speak_target always
-	run sketchpad always
 	run select_target always
 	run feedback always
 	run blank always
@@ -112,9 +130,10 @@ define sequence experiment
 	set description "Runs a number of items in sequence"
 	run README always
 	run pygaze_init always
-	run form_base always
+	run form_base never
 	run python_definitions always
-	run eight_options "[opt8] = yes"
+	run eight_options never
+	run calibration always
 	run four_options always
 	run free_writing_loop "[free_writing] = yes"
 	run final_feedback "[free_writing] != yes"
@@ -176,6 +195,26 @@ define feedback final_feedback
 	draw textline center=1 color=green font_bold=no font_family=sans font_italic=no font_size=18 html=yes show_if=always text="Appuyez 'q' pour quitter." x=0 y=448 z_index=0
 
 define form_base form_base
+	set timeout infinite
+	set spacing 10
+	set rows "2;3;3;1;1"
+	set only_render no
+	set margins "50;50;50;50"
+	set description "A generic form plug-in"
+	set cols "1;1"
+	set _theme gray
+	widget 0 0 2 1 image path="getyourmindwrite.png"
+	widget 0 1 1 1 image_button path="2afc.png" var=opt2
+	widget 1 1 1 1 image_button path="4afc.png" var=opt4
+	widget 0 2 1 1 image_button path="8afc.png" var=opt8
+	widget 1 2 1 1 image_button path="freewriting.png" var=free_writing
+	widget 0 3 1 1 checkbox text="Check fixation / Controle de fixation" var=checkFix
+	widget 1 3 1 1 checkbox text="Gaze stabilization / Stabilisation de regard" var=stabilize
+	widget 0 4 1 1 label text="Threshold/ Seuil"
+	widget 1 4 1 1 text_input text=1.375 var=likelihoodThr
+
+
+define form_base form_base_1
 	set timeout infinite
 	set spacing 10
 	set rows "2;3;3;1;1"
@@ -383,6 +422,16 @@ define inline_script globals
 	var.winnerCount = np.zeros(4)
 	
 	var.wordProbability = np.zeros(4)
+	
+	
+	#Calibration settings
+	import random
+	import string
+	import sys
+	from time import sleep
+	var.stop= False
+	var.counter=0
+	var.colorInterval=100
 	__end__
 	set _prepare ""
 
@@ -755,7 +804,7 @@ define inline_script itemArray
 				return -1
 		# Comparing the meanPupilSize with the black and white thresholds.
 		# If White set to 1, Black set to -1, else 0. 
-		def getColor(index, meanPupilSize):
+		def getColor(self, index, meanPupilSize):
 			if minWhiteThreshold < meanPupilSize and meanPupilSize < maxWhiteThreshold: 
 				var.predictionArray.append([1])
 			elif minBlackThreshold < meanPupilSize and meanPupilSize < maxBlackThreshold: 
@@ -802,7 +851,7 @@ define inline_script itemArray
 						t1 = exp.time()
 						i = int(t1-t0)
 					print('t1', t1)
-					eyetracker.log('start_round %d' % rounds)			
+					#eyetracker.log('start_round %d' % rounds)			
 					eyetracker.log('start_invert')
 					eyetracker.log('end_invert')
 					eyetracker.log('start_adaptation')
@@ -814,7 +863,7 @@ define inline_script itemArray
 					eyetracker.log('end_collection')
 					meanPupilSize = np.median(a)
 					print(meanPupilSize)
-					getColor(x, meanPupilSize)
+					self.getColor(x, meanPupilSize)
 					self.pupilSizeIndicator.setText(str(meanPupilSize))
 					for item in self.items:
 						item.setPupilSize(meanPupilSize)	
@@ -823,6 +872,49 @@ define inline_script itemArray
 				sm = self.comparePatterns(var.predictionArray)
 				return self.chosenWord(sm)
 				
+		def invertCalibration(self, dur, colour):
+				#self.comparePatterns()	
+				"""
+				desc:
+					Inverts the brightness of all items.
+					
+				keywords:
+					steps:	The duration of the inversion animation.
+				"""
+				
+				#f = np.linspace(1, -1, dur)
+				pupilSizeTraces = []
+				i = 0
+				# Iterate through each color in the defined global variables 
+				t0 = exp.time()
+				while i < dur:	
+					for item in self.items:
+						
+						
+						#set the color equal to the corresponding color of x in the global variable#
+				
+						item.setBrightness(colour)
+					self.show()
+					t1 = exp.time()
+					i = int(t1-t0)
+			
+				
+				#eyetracker.log('start_round %d' % rounds)			
+				eyetracker.log('start_invert')
+				eyetracker.log('end_invert')
+				eyetracker.log('start_adaptation')
+				collectPupilTrace(self, dur)
+				eyetracker.log('end_adaptation')
+				eyetracker.log('start_collection')
+				a = collectPupilTrace(self, dur/2)
+				
+				eyetracker.log('end_collection')
+				meanPupilSize = np.median(a)
+				print(meanPupilSize)
+				self.pupilSizeIndicator.setText(str(meanPupilSize))
+				for item in self.items:
+					item.setPupilSize(meanPupilSize)	
+				self.show()
 				
 				
 		def setMode2(self, mode2, steps=50):
@@ -917,6 +1009,7 @@ define inline_script itemArray
 			exp.sleep(initialSleep)
 			self.show()
 			collectPupilTrace(self, initialSleep)
+			idx = -1
 			while True:
 				while idx == -1:
 					idx = self.invert(dur=invertSteps)
@@ -936,12 +1029,136 @@ define logger logger
 	set description "Logs experimental data"
 	set auto_log yes
 
+define logger logger_1
+	set description "Logs experimental data"
+	set auto_log yes
+
+define logger logger_3
+	set description "Logs experimental data"
+	set auto_log yes
+
+define inline_script new_inline_script
+	set description "Executes Python code"
+	___run__
+	__end__
+	___prepare__
+	dur = 500
+	colours = ['black','white']
+	for x in range(2):
+		items = {
+				colours[x]		: colours[x],
+				colours[x]		: colours[x],
+				colours[x]		: colours[x],
+				colours[x]		: colours[x],
+				}
+		itemKeys = [
+				colours[x],
+				colours[x],
+				colours[x],
+				colours[x]
+				,]
+				
+		if self.get('stabilize') != 'no':
+			stabilize = True
+		else:
+			stabilize = False		
+		if self.get('checkFix') != 'no':
+			checkFix = True
+		else:
+			checkFix = False
+		ia = ItemArray(itemKeys,
+			ecc=self.get('ecc'),
+			size=self.get('size'),
+			bgScale=2,
+			stabilize=stabilize,
+			writingIndicator=None,
+			check=checkFix
+			)
+		if colours[x] == 'white':
+			colour = 1
+		else:
+			colour = -1
+		ia.invertCalibration(dur, colour)
+	__end__
+
+define inline_script new_inline_script_1
+	set description "Executes Python code"
+	___run__
+	print(self.get('counter'))
+	counter1='1'
+	print('The current row:')
+	
+	#print(items['loop1'].live_dm[var.rowNumber])
+	print(var.rowNumber)
+	if (var.rowNumber==5):
+		sys.exit()
+	__end__
+	___prepare__
+	myCanvas = canvas()
+	myCanvas.fixdot()
+	
+	myCanvas['up_left'] = Circle(-250, -250  , 130, fill=True, color=var.colorUp)
+	myCanvas['down_right'] = Circle(250, 250, 130, fill=True, color=var.colorDown)
+	myCanvas['down_left'] = Circle(-250, 250, 130, fill=True, color=var.colorLeft)
+	myCanvas['up_right'] = Circle(250, -250, 130, fill=True, color=var.colorRight)
+	myCanvas.show()
+	clock.sleep(5000)
+	
+	var.counter = u'var.counter'
+	
+	myCanvas.clear()
+	__end__
+
+define loop new_loop
+	set source_file ""
+	set source table
+	set repeat 1
+	set order random
+	set description "Repeatedly runs another item"
+	set cycles 1
+	set continuous no
+	set break_if_on_first yes
+	set break_if never
+	setcycle 0 empty_column ""
+	run ""
+
+define pygaze_drift_correct new_pygaze_drift_correct
+	set ypos 0
+	set xpos 0
+	set target_style default
+	set target_color "[foreground]"
+	set fixation_triggered no
+	set draw_target yes
+	set description "Perform eye-tracker drift correction"
+
+define pygaze_drift_correct new_pygaze_drift_correct_1
+	set ypos 0
+	set xpos 0
+	set target_style default
+	set target_color "[foreground]"
+	set fixation_triggered no
+	set draw_target yes
+	set description "Perform eye-tracker drift correction"
+
+define pygaze_start_recording new_pygaze_start_recording
+	set status_msg start_trial
+	set description "Puts the eye tracker into recording mode"
+
 define pygaze_drift_correct pygaze_drift_correct
 	set ypos 0
 	set xpos 0
 	set target_style default
 	set target_color "[foreground]"
 	set fixation_triggered yes
+	set draw_target yes
+	set description "Perform eye-tracker drift correction"
+
+define pygaze_drift_correct pygaze_drift_correct_1
+	set ypos 0
+	set xpos 0
+	set target_style default
+	set target_color "[foreground]"
+	set fixation_triggered no
 	set draw_target yes
 	set description "Perform eye-tracker drift correction"
 
@@ -968,11 +1185,25 @@ define pygaze_log pygaze_log
 	set description "Writes information to the eye-tracker logfile"
 	set auto_log yes
 
+define pygaze_log pygaze_log_1
+	set throttle 2
+	set msg ""
+	set description "Writes information to the eye-tracker logfile"
+	set auto_log no
+
 define pygaze_start_recording pygaze_start_recording
 	set status_msg "start_trial [count_exp_sequence]"
 	set description "Puts the eye tracker into recording mode"
 
+define pygaze_start_recording pygaze_start_recording_1
+	set status_msg "start_trial[count_calibration_sequence]"
+	set description "Puts the eye tracker into recording mode"
+
 define pygaze_stop_recording pygaze_stop_recording
+	set status_msg stop_trial
+	set description "Stops recording of eye tracking data"
+
+define pygaze_stop_recording pygaze_stop_recording_1
 	set status_msg stop_trial
 	set description "Stops recording of eye tracking data"
 
