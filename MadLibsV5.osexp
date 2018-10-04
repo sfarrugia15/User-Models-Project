@@ -1,7 +1,7 @@
 ---
 API: 2.1
-OpenSesame: 3.2.5
-Platform: nt
+OpenSesame: 3.2.5b1
+Platform: posix
 ---
 set width 1280
 set uniform_coordinates yes
@@ -28,7 +28,7 @@ set font_size 18
 set font_italic no
 set font_family mono
 set font_bold no
-set experiment_path "C:/Users/Steve/Documents/GitHub/User-Models-Project"
+set experiment_path "/home/dani/Desktop/MSc in Artificial Intelligence/Year 1/1A/User Models/Project/Project/User-Models-Project"
 set disable_garbage_collection yes
 set description "A brain-computer interface based on covert attention and pupillometry"
 set coordinates relative
@@ -60,6 +60,7 @@ define sketchpad blank
 	set description "Displays stimuli"
 
 define loop calibration
+	set source_file ""
 	set source table
 	set repeat 1
 	set order sequential
@@ -421,7 +422,7 @@ define inline_script globals
 	
 	var.winnerCount = np.zeros(4)
 	
-	var.wordProbability = np.ones(4)
+	var.wordProbability = np.zeros(4)
 	
 	
 	#Calibration settings
@@ -791,22 +792,29 @@ define inline_script itemArray
 		# Return the similarity percentage for each cycle - pattern and reading. 
 		def comparePatterns(self, predictionArray):
 			sm = [] 
-			#test = [1, 0, -1, 1]
+			test = [1, 0, -1, 1]
 			for i in range(0,4):
 				sm.append(np.mean(np.array(predictionArray) == np.array(var.compareArray[i])))
 			return sm
 		
 		def chosenWord(self, sm):
 			bestWord = sm.index(max(sm))
+			print("bestWord")
+			print(bestWord)
 			var.winnerCount[bestWord] = var.winnerCount[bestWord] + 1
+			print("Winnercount")
+			print(var.winnerCount)
 			winnerProb = var.winnerCount/sum(var.winnerCount)
-			np.append(var.wordProbability,winnerProb,axis=0)
+			print("winnerProb")
+			print(winnerProb)
+			var.wordProbability = np.append(var.wordProbability,winnerProb, axis=0)
+			print("wordProbability")
+			print(var.wordProbability)
+			print("wordProbability shape")
+			print(var.wordProbability.shape)
 			prevMaxValue = max(var.wordProbability[-2,:])
 			currMaxValue = var.wordProbability.argmax(axis=0)
-			print(currMaxValue)
-			print(var.wordProbability)
 			if abs(prevMaxValue - currMaxValue) < 0.03:
-				print(var.wordProbability.index(currMaxValue))
 				return var.wordProbability.index(currMaxValue)
 			else:
 				return -1
@@ -846,8 +854,6 @@ define inline_script itemArray
 	
 				# Iterate through each color in the defined global variables 
 				for x in range(0,4):
-					print(var.wordProbability)
-					print(var.predictionArray)
 					t0 = exp.time()
 					print('t0 ',t0)
 					i = 0
@@ -869,17 +875,16 @@ define inline_script itemArray
 					eyetracker.log('end_adaptation')
 					eyetracker.log('start_collection')
 					a = collectPupilTrace(self, dur/2)
-				
 					eyetracker.log('end_collection')
 					meanPupilSize = np.median(a)
-					print(meanPupilSize)
 					self.getColor(x, meanPupilSize)
 					self.pupilSizeIndicator.setText(str(meanPupilSize))
 					for item in self.items:
 						item.setPupilSize(meanPupilSize)	
 					self.show()
-				
+				print(var.predictionArray)
 				sm = self.comparePatterns(var.predictionArray)
+				print(sm)
 				return self.chosenWord(sm)
 				
 		def invertCalibration(self, dur, colour):
@@ -1054,8 +1059,7 @@ define logger logger_3
 
 define inline_script new_inline_script
 	set description "Executes Python code"
-	___run__
-	__end__
+	set _run ""
 	___prepare__
 	dur = 500
 	colours = ['black','white']
