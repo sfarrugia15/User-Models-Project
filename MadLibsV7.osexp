@@ -1,6 +1,6 @@
 ---
 API: 2.1
-OpenSesame: 3.2.4
+OpenSesame: 3.2.5
 Platform: nt
 ---
 set width 1280
@@ -28,7 +28,7 @@ set font_size 18
 set font_italic no
 set font_family mono
 set font_bold no
-set experiment_path "E:/User Models"
+set experiment_path "C:/Users/Steve/Documents/GitHub/User-Models-Project"
 set disable_garbage_collection yes
 set description "A brain-computer interface based on covert attention and pupillometry"
 set coordinates relative
@@ -189,7 +189,7 @@ define feedback feedback
 	set reset_variables no
 	set duration keypress
 	set description "Provides feedback to the participant"
-	draw textline center=1 color=green font_bold=no font_family=sans font_italic=no font_size=32 html=yes show_if=always text="<b>End of selection</b><br /><br />Correct: [var.winner]<br />Duration: [loop_rt] s<br /><br />Press a key to continue ..." x=0 y=0 z_index=0
+	draw textline center=1 color=green font_bold=no font_family=sans font_italic=no font_size=32 html=yes show_if=always text="<b>End of selection</b><br /><br />Correct: [winner]<br />Duration: [loop_rt] s<br /><br />Press a key to continue ..." x=0 y=0 z_index=0
 
 define feedback final_feedback
 	set reset_variables yes
@@ -791,20 +791,33 @@ define inline_script itemArray
 			var.winnerCount[bestWord] = var.winnerCount[bestWord] + 1
 			var.currWordProbability = var.winnerCount/sum(var.winnerCount)
 			#Compare previous and current probs
-			x, y = np.unique(var.currWordProbability, return_counts = True)
+			ascUniqueElements, ascFrequencyCount = np.unique(var.currWordProbability, return_counts = True)
 			prevMaxIndex = var.prevWordProbability.argmax()
 			currMaxIndex = var.currWordProbability.argmax()
 			print("wordProbability", var.currWordProbability)
 			
-			if y[-1] == 1:
+			print("acsUniqueElements", ascUniqueElements)
+			print("ascFrequencyCount", ascFrequencyCount)
+			
+			if ascFrequencyCount[-1] == 1 and ascUniqueElements[-1] != 0:
 				print("Entering")
+				diff = var.prevWordProbability[prevMaxIndex], var.currWordProbability[currMaxIndex]
 				print("diff",var.prevWordProbability[prevMaxIndex], var.currWordProbability[currMaxIndex])
 				if abs(var.prevWordProbability[prevMaxIndex] - var.currWordProbability[currMaxIndex]) <= 0.2: 
+					var.prevWordProbability = var.currWordProbability
+					print("Previous Word Probability1", var.prevWordProbability)
+					print("Current Word Probability1", var.currWordProbability)
 					return currMaxIndex
 				else:
+					var.prevWordProbability = var.currWordProbability
+					print("Previous Word Probability2", var.prevWordProbability)
+					print("Current Word Probability2", var.currWordProbability)
 					return -1
 			else:		
+				print("Made it")
 				var.prevWordProbability = var.currWordProbability
+				print("Previous Word Probability3", var.prevWordProbability)
+				print("Current Word Probability3", var.currWordProbability)
 				return -1
 			
 		# Comparing the meanPupilSize with the black and white thresholds.
@@ -979,7 +992,7 @@ define inline_script itemArray
 				self.items[0].showMirror = True
 				self.items[1].showMirror = True
 				
-		def selectionLoop(self, initialSleep=1000, invertSteps=1500, adaptDur=500,
+		def selectionLoop(self, initialSleep=1000, invertSteps=500, adaptDur=500,
 			collectDur=250, target=None, mode2='180', likelihoodThr=2,
 			cue=None):
 			
@@ -1189,7 +1202,7 @@ define pygaze_drift_correct pygaze_drift_correct_1
 	set description "Perform eye-tracker drift correction"
 
 define pygaze_init pygaze_init
-	set tracker_type EyeLink
+	set tracker_type "Advanced dummy (mouse simulation)"
 	set tobiiglasses_udpport 49152
 	set tobiiglasses_address "192.168.71.50"
 	set smi_send_port 4444
