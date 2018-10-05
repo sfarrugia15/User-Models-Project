@@ -1,7 +1,7 @@
 ---
 API: 2.1
-OpenSesame: 3.2.5b1
-Platform: posix
+OpenSesame: 3.2.5
+Platform: nt
 ---
 set width 1280
 set uniform_coordinates yes
@@ -28,7 +28,7 @@ set font_size 18
 set font_italic no
 set font_family mono
 set font_bold no
-set experiment_path "/home/dani/Desktop/MSc in Artificial Intelligence/Year 1/1A/User Models/Project/Project/User-Models-Project"
+set experiment_path "C:/Users/Steve/Documents/GitHub/User-Models-Project"
 set disable_garbage_collection yes
 set description "A brain-computer interface based on covert attention and pupillometry"
 set coordinates relative
@@ -807,7 +807,7 @@ define inline_script itemArray
 			winnerProb = var.winnerCount/sum(var.winnerCount)
 			print("winnerProb")
 			print(winnerProb)
-			var.wordProbability = np.append(var.wordProbability,winnerProb, axis=0)
+			var.wordProbability = np.vstack([var.wordProbability,winnerProb])
 			print("wordProbability")
 			print(var.wordProbability)
 			print("wordProbability shape")

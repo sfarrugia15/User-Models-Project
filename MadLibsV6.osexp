@@ -69,7 +69,7 @@ define loop calibration
 	set continuous no
 	set break_if_on_first yes
 	set break_if never
-	setcycle 0 empty_column ""
+	setcycle 0 empty_column 0
 	run calibration_sequence
 
 define sequence calibration_sequence
@@ -1045,8 +1045,7 @@ define logger logger_3
 
 define inline_script new_inline_script
 	set description "Executes Python code"
-	set _run ""
-	___prepare__
+	___run__
 	dur = 500
 	colours = ['black','white']
 	for x in range(2):
@@ -1085,6 +1084,7 @@ define inline_script new_inline_script
 			colour = -1
 		ia.invertCalibration(dur, colour)
 	__end__
+	set _prepare ""
 
 define inline_script new_inline_script_1
 	set description "Executes Python code"
