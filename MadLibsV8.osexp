@@ -1,6 +1,6 @@
 ---
 API: 2.1
-OpenSesame: 3.2.4
+OpenSesame: 3.2.5
 Platform: nt
 ---
 set width 1280
@@ -28,7 +28,7 @@ set font_size 18
 set font_italic no
 set font_family mono
 set font_bold no
-set experiment_path "C:\\Users\\EyeTDisplay\\Desktop\\User Models"
+set experiment_path "C:/Users/Steve/Documents/GitHub/User-Models-Project"
 set disable_garbage_collection yes
 set description "A brain-computer interface based on covert attention and pupillometry"
 set coordinates relative
@@ -91,7 +91,6 @@ define inline_script default_settings
 	__end__
 
 define loop eight_options
-	set source_file ""
 	set source table
 	set skip 0
 	set repeat 2
@@ -427,6 +426,8 @@ define inline_script globals
 	var.maxWhiteThrehold= 0
 	var.minBlackThreshold= 0
 	var.maxBlackThreshold = 0
+	
+	var.firstCycle = True
 	__end__
 	set _prepare ""
 
@@ -849,7 +850,7 @@ define inline_script itemArray
 					steps:	The duration of the inversion animation.
 				"""
 				
-				f = np.linspace(1, -1, dur)
+				
 				leftSideBottom = []
 				leftSideTop = []
 				leftSideTop.append(self.items[2])
@@ -859,7 +860,7 @@ define inline_script itemArray
 				rightSideBottom = []
 				rightSideTop.append(self.items[1])
 				rightSideBottom.append(self.items[0])
-	
+				f = np.linspace(0, 1, dur/2)
 				pupilSizeTraces = []
 	
 				# Iterate through each color in the defined global variables 
@@ -867,15 +868,40 @@ define inline_script itemArray
 					t0 = exp.time()
 					print('t0 ',t0)
 					i = 0
+					#f1 = np.linspace(var.topRightPattern[x-1], 1, dur/2)
 					#set the color equal to the corresponding color of x in the global variable
-					while i < dur:		
-						rightSideTop[0].setBrightness(var.topRightPattern[x] * f[i])
-						rightSideBottom[0].setBrightness(var.bottomRightPattern[x]* f[i])
-						leftSideTop[0].setBrightness(var.topLeftPattern[x]* f[i])
-						leftSideBottom[0].setBrightness(var.bottomLeftPattern[x]* f[i])
+					while i < dur/2:		
+						if var.firstCycle == True:
+							rightSideTop[0].setBrightness(var.topRightPattern[x])
+							rightSideBottom[0].setBrightness(var.bottomRightPattern[x])
+							leftSideTop[0].setBrightness(var.topLeftPattern[x])
+							leftSideBottom[0].setBrightness(var.bottomLeftPattern[x])
+							var.firstCycle = False
+						else: 
+							if var.topRightPattern[x-1] == var.topRightPattern[x]:
+								rightSideTop[0].setBrightness(var.topRightPattern[x])
+							else: 
+								rightSideTop[0].setBrightness(var.topRightPattern[x] * f[i])
+								
+							if var.bottomRightPattern[x-1] == var.bottomRightPattern[x]:
+								rightSideBottom[0].setBrightness(var.bottomRightPattern[x])
+							else: 
+								rightSideBottom[0].setBrightness(var.bottomRightPattern[x]* f[i])
+								
+							if var.topLeftPattern[x-1] == var.topLeftPattern[x]:
+								leftSideTop[0].setBrightness(var.topLeftPattern[x])
+							else:
+								leftSideTop[0].setBrightness(var.topLeftPattern[x]* f[i])
+								
+							if var.bottomLeftPattern[x-1] == var.bottomLeftPattern[x]:
+								leftSideBottom[0].setBrightness(var.bottomLeftPattern[x])
+							else:
+								leftSideBottom[0].setBrightness(var.bottomLeftPattern[x]* f[i])
+						self.show()
 						#print 'i = %s' % i
 						t1 = exp.time()
 						i = int(t1-t0)
+					
 					print('t1', t1)
 					#eyetracker.log('start_round %d' % rounds)			
 					eyetracker.log('start_invert')
@@ -915,10 +941,7 @@ define inline_script itemArray
 				t0 = exp.time()
 				while i < dur:	
 					for item in self.items:
-						
-						
-						#set the color equal to the corresponding color of x in the global variable#
-				
+						#set the color equal to the corresponding color of x in the global variable#		
 						item.setBrightness(colour)
 					self.show()
 					t1 = exp.time()
@@ -1079,7 +1102,7 @@ define logger logger_3
 define inline_script new_inline_script
 	set description "Executes Python code"
 	___run__
-	dur = 2000
+	dur = 1500
 	colours = ['black','white']
 	for x in range(2):
 		items = {
@@ -1214,7 +1237,7 @@ define pygaze_drift_correct pygaze_drift_correct_1
 	set description "Perform eye-tracker drift correction"
 
 define pygaze_init pygaze_init
-	set tracker_type EyeLink
+	set tracker_type "Advanced dummy (mouse simulation)"
 	set tobiiglasses_udpport 49152
 	set tobiiglasses_address "192.168.71.50"
 	set smi_send_port 4444
