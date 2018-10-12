@@ -1,6 +1,6 @@
 ---
 API: 2.1
-OpenSesame: 3.2.5
+OpenSesame: 3.2.4
 Platform: nt
 ---
 set width 1280
@@ -28,7 +28,7 @@ set font_size 18
 set font_italic no
 set font_family mono
 set font_bold no
-set experiment_path "C:/Users/Steve/Documents/GitHub/User-Models-Project"
+set experiment_path "C:\\Users\\EyeTDisplay\\Desktop\\User-Models-Project"
 set disable_garbage_collection yes
 set description "A brain-computer interface based on covert attention and pupillometry"
 set coordinates relative
@@ -91,6 +91,7 @@ define inline_script default_settings
 	__end__
 
 define loop eight_options
+	set source_file ""
 	set source table
 	set skip 0
 	set repeat 2
@@ -202,7 +203,7 @@ define form_base form_base
 	set spacing 10
 	set rows "2;3;3;1;1"
 	set only_render no
-	set margins "50;50;50;50"
+	set margins "20;20;20;20"
 	set description "A generic form plug-in"
 	set cols "1;1"
 	set _theme gray
@@ -428,6 +429,8 @@ define inline_script globals
 	var.maxBlackThreshold = 0
 	
 	var.firstCycle = True
+	
+	var.bgScale =2.6
 	__end__
 	set _prepare ""
 
@@ -442,7 +445,7 @@ define inline_script item
 		"""
 		
 		def __init__(self, itemArray, itemId, angle, ecc, opacity=.5, color='green',
-			size=64, brightness=1, mirror=False, bgScale=2):
+			size=64, brightness=1, mirror=False, bgScale= var.bgScale):
 				
 			"""
 			desc:
@@ -675,7 +678,7 @@ define inline_script itemArray
 	
 		var.itemChange=[]
 		def __init__(self, itemIds, stabilize=False, check=True, ecc=310, size=64,
-			debug=True, bgScale=2, writingIndicator=None):
+			debug=True, bgScale= var.bgScale, writingIndicator=None):
 			
 			"""
 			desc:
@@ -933,7 +936,15 @@ define inline_script itemArray
 				keywords:
 					steps:	The duration of the inversion animation.
 				"""
+				leftSideBottom = []
+				leftSideTop = []
+				leftSideTop.append(self.items[2])
+				leftSideBottom.append(self.items[3])
 				
+				rightSideTop = []
+				rightSideBottom = []
+				rightSideTop.append(self.items[1])
+				rightSideBottom.append(self.items[0])
 				#f = np.linspace(1, -1, dur)
 				pupilSizeTraces = []
 				i = 0
@@ -941,13 +952,17 @@ define inline_script itemArray
 				t0 = exp.time()
 				while i < dur:	
 					for item in self.items:
+						leftSideTop[0].setBrightness(colour*(-1))
+						rightSideBottom[0].setBrightness(colour*(-1))
+						
+						rightSideTop[0].setBrightness(colour)
+						leftSideBottom[0].setBrightness(colour)
 						#set the color equal to the corresponding color of x in the global variable#		
-						item.setBrightness(colour)
+						#item.setBrightness(colour)
 					self.show()
 					t1 = exp.time()
 					i = int(t1-t0)
 			
-				
 				#eyetracker.log('start_round %d' % rounds)			
 				eyetracker.log('start_invert')
 				eyetracker.log('end_invert')
@@ -960,14 +975,14 @@ define inline_script itemArray
 				eyetracker.log('end_collection')
 				meanPupilSize = np.median(a)
 				if colour == 1:
-					var.minWhiteThreshold = meanPupilSize*0.97
+					var.minWhiteThreshold = meanPupilSize*0.98
 					print("minWhiteThreshold", var.minWhiteThreshold)
-					var.maxWhiteThreshold = meanPupilSize*1.03
+					var.maxWhiteThreshold = meanPupilSize*1.02
 					print("maxWhiteThreshold", var.maxWhiteThreshold)
 				else:
-					var.minBlackThreshold = meanPupilSize*0.97
+					var.minBlackThreshold = meanPupilSize*0.98
 					print("minBlackThreshold", var.minBlackThreshold)
-					var.maxBlackThreshold = meanPupilSize*1.03
+					var.maxBlackThreshold = meanPupilSize*1.02
 					print("maxBlackThreshold", var.maxBlackThreshold)
 				self.pupilSizeIndicator.setText(str(meanPupilSize))
 				for item in self.items:
@@ -1102,22 +1117,22 @@ define logger logger_3
 define inline_script new_inline_script
 	set description "Executes Python code"
 	___run__
-	dur = 1500
+	dur = 2500
 	colours = ['black','white']
 	for x in range(2):
 		items = {
+				colours[x-1]		: colours[x-1],
 				colours[x]		: colours[x],
-				colours[x]		: colours[x],
-				colours[x]		: colours[x],
+				colours[x-1]		: colours[x-1],
 				colours[x]		: colours[x],
 				}
 		itemKeys = [
+				colours[x-1],
 				colours[x],
-				colours[x],
-				colours[x],
+				colours[x-1],
 				colours[x]
 				,]
-				
+	
 		if self.get('stabilize') != 'no':
 			stabilize = True
 		else:
@@ -1129,7 +1144,7 @@ define inline_script new_inline_script
 		ia = ItemArray(itemKeys,
 			ecc=self.get('ecc'),
 			size=self.get('size'),
-			bgScale=2,
+			bgScale= var.bgScale,
 			stabilize=stabilize,
 			writingIndicator=None,
 			check=checkFix
@@ -1237,7 +1252,7 @@ define pygaze_drift_correct pygaze_drift_correct_1
 	set description "Perform eye-tracker drift correction"
 
 define pygaze_init pygaze_init
-	set tracker_type "Advanced dummy (mouse simulation)"
+	set tracker_type EyeLink
 	set tobiiglasses_udpport 49152
 	set tobiiglasses_address "192.168.71.50"
 	set smi_send_port 4444
